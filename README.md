@@ -8,6 +8,10 @@ This project is a modular Python and SQLite system for loading structured CSV da
 - Schema manager implemented
 - Unit tests added for DB connection and schema logic
 
+- Schema normalization added
+- Schema comparison logic added
+- Decision flow added for create vs append vs conflict
+
 ## Tech Stack
 - Python
 - SQLite
