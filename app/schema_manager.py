@@ -86,14 +86,27 @@ class SchemaManager:
     ) -> bool:
         """
         A match means:
-        - same number of columns
+        - same number of user-defined columns
         - normalized column names match in order
         - SQLite types match exactly
+
+        Auto-generated primary key 'id' in existing tables is ignored
+        if it is not present in the inferred schema.
         """
-        if len(inferred_schema) != len(existing_schema):
+        filtered_existing = existing_schema
+
+        inferred_has_id = any(col["normalized_name"] == "id" for col in inferred_schema)
+
+        if not inferred_has_id:
+            filtered_existing = [
+                col for col in existing_schema
+                if col["normalized_name"] != "id"
+            ]
+
+        if len(inferred_schema) != len(filtered_existing):
             return False
 
-        for inferred_col, existing_col in zip(inferred_schema, existing_schema):
+        for inferred_col, existing_col in zip(inferred_schema, filtered_existing):
             if inferred_col["normalized_name"] != existing_col["normalized_name"]:
                 return False
 
@@ -102,21 +115,37 @@ class SchemaManager:
 
         return True
 
-    def create_table(self, table_name: str, schema: list[dict[str, str]]) -> None:
+    def create_table(self, table_name, schema):
         """
-        Dynamically create a SQLite table from schema metadata.
+        Create table with given schema.
+        Automatically adds primary key if not present.
         """
-        columns_sql = []
 
-        for column in schema:
-            col_name = column["name"]
-            col_type = column["type"]
-            columns_sql.append(f'"{col_name}" {col_type}')
+        columns = []
 
-        create_sql = f'CREATE TABLE "{table_name}" ({", ".join(columns_sql)})'
+        has_id = any(col["normalized_name"] == "id" for col in schema)
 
-        cursor = self.conn.cursor()
-        cursor.execute(create_sql)
+        if not has_id:
+            columns.append("id INTEGER PRIMARY KEY AUTOINCREMENT")
+
+        for col in schema:
+            name = col["normalized_name"]
+            col_type = col["type"]
+
+            if name == "id" and not has_id:
+                continue
+
+            columns.append(f"{name} {col_type}")
+
+        column_sql = ", ".join(columns)
+
+        query = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            {column_sql}
+        )
+        """
+
+        self.conn.execute(query)
         self.conn.commit()
 
     def decide_create_or_append(self, table_name: str, inferred_schema: list[dict[str, str]]) -> str:

@@ -17,7 +17,6 @@ def test_create_table_and_detect_schema():
     manager = SchemaManager(conn)
 
     schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
         {"name": "name", "normalized_name": "name", "type": "TEXT"},
     ]
 
@@ -26,7 +25,16 @@ def test_create_table_and_detect_schema():
     assert manager.table_exists("users") is True
 
     actual_schema = manager.get_table_schema("users")
-    assert actual_schema == schema
+    column_names = [col["normalized_name"] for col in actual_schema]
+
+    assert "id" in column_names
+    assert "name" in column_names
+
+    id_column = next(col for col in actual_schema if col["normalized_name"] == "id")
+    name_column = next(col for col in actual_schema if col["normalized_name"] == "name")
+
+    assert id_column["type"] == "INTEGER"
+    assert name_column["type"] == "TEXT"
 
     conn.close()
 
@@ -120,7 +128,7 @@ def test_decide_create_or_append_returns_create_for_new_table():
     manager = SchemaManager(conn)
 
     inferred_schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
+        {"name": "name", "normalized_name": "name", "type": "TEXT"},
     ]
 
     assert manager.decide_create_or_append("users", inferred_schema) == "create"
@@ -132,14 +140,12 @@ def test_decide_create_or_append_returns_append_for_matching_schema():
     manager = SchemaManager(conn)
 
     schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
         {"name": "name", "normalized_name": "name", "type": "TEXT"},
     ]
 
     manager.create_table("users", schema)
 
     inferred_schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
         {"name": "name", "normalized_name": "name", "type": "TEXT"},
     ]
 
@@ -152,14 +158,12 @@ def test_decide_create_or_append_returns_conflict_for_mismatch():
     manager = SchemaManager(conn)
 
     existing_schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
         {"name": "name", "normalized_name": "name", "type": "TEXT"},
     ]
 
     manager.create_table("users", existing_schema)
 
     inferred_schema = [
-        {"name": "id", "normalized_name": "id", "type": "INTEGER"},
         {"name": "age", "normalized_name": "age", "type": "INTEGER"},
     ]
 
