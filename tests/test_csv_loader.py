@@ -22,6 +22,9 @@ def test_csv_loader_creates_table(tmp_path):
 
     assert result == "created"
 
+    rows = conn.execute("SELECT id, name FROM users ORDER BY id").fetchall()
+    assert rows == [(1, "alice"), (2, "bob")]
+
     conn.close()
 
 
@@ -55,6 +58,9 @@ def test_csv_loader_appends(tmp_path):
 
     assert result == "appended"
 
+    rows = conn.execute("SELECT id, name FROM users ORDER BY id").fetchall()
+    assert rows == [(1, "alice"), (2, "bob")]
+
     conn.close()
 
 
@@ -87,5 +93,8 @@ def test_csv_loader_conflict(tmp_path):
     result = loader.load_csv(str(csv_file2), "users")
 
     assert result == "conflict"
+
+    rows = conn.execute("SELECT id, name FROM users ORDER BY id").fetchall()
+    assert rows == [(1, "alice")]
 
     conn.close()
