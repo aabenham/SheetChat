@@ -82,3 +82,47 @@ def test_rejects_empty_query():
     assert "Query cannot be empty" in result["error"]
 
     conn.close()
+
+
+def test_allows_count_star():
+    conn, validator = setup_users_table()
+
+    result = validator.validate("SELECT COUNT(*) FROM users")
+
+    assert result["valid"] is True
+    assert result["error"] is None
+
+    conn.close()
+
+
+def test_allows_avg_with_alias():
+    conn, validator = setup_users_table()
+
+    result = validator.validate("SELECT AVG(age) AS average_age FROM users")
+
+    assert result["valid"] is True
+    assert result["error"] is None
+
+    conn.close()
+
+
+def test_allows_max_with_alias():
+    conn, validator = setup_users_table()
+
+    result = validator.validate("SELECT MAX(age) AS oldest_age FROM users")
+
+    assert result["valid"] is True
+    assert result["error"] is None
+
+    conn.close()
+
+
+def test_rejects_aggregate_on_unknown_column():
+    conn, validator = setup_users_table()
+
+    result = validator.validate("SELECT AVG(salary) AS average_salary FROM users")
+
+    assert result["valid"] is False
+    assert "Unknown column" in result["error"]
+
+    conn.close()

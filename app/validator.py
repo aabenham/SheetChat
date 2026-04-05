@@ -39,8 +39,43 @@ class SQLValidator:
         selected_columns = [col.strip() for col in selected_columns_raw.split(",")]
 
         for col in selected_columns:
-            normalized = col.lower()
-            if normalized not in valid_columns:
+            if not self._is_valid_selected_expression(col, valid_columns):
                 return {"valid": False, "error": f"Unknown column: {col}"}
 
         return {"valid": True, "error": None}
+
+    def _is_valid_selected_expression(self, expression: str, valid_columns: set[str]) -> bool:
+        """
+        Allow:
+        - plain columns: name
+        - aliases: name AS person_name
+        - aggregates: AVG(age), COUNT(*), MAX(age)
+        - aggregates with aliases: AVG(age) AS average_age
+        """
+        expression = expression.strip()
+
+        alias_match = re.match(r"(.+?)\s+as\s+[a-zA-Z_][a-zA-Z0-9_]*$", expression, re.IGNORECASE)
+        if alias_match:
+            expression = alias_match.group(1).strip()
+
+        if expression == "*":
+            return True
+
+        if expression.lower() in valid_columns:
+            return True
+
+        agg_match = re.match(
+            r"^(count|avg|min|max|sum)\((\*|[a-zA-Z_][a-zA-Z0-9_]*)\)$",
+            expression,
+            re.IGNORECASE,
+        )
+        if agg_match:
+            func_name = agg_match.group(1).lower()
+            arg = agg_match.group(2).lower()
+
+            if func_name == "count" and arg == "*":
+                return True
+
+            return arg in valid_columns
+
+        return False
