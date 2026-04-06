@@ -127,6 +127,66 @@ System workflow:
 
 ------------------------------------------------------------------------
 
+# Design Justification
+
+The system was designed using modular components:
+
+-   CLI
+-   Query Service
+-   LLM Adapter
+-   SQL Validator
+-   Schema Manager
+-   CSV Loader
+
+This separation improves:
+
+-   Testability
+-   Maintainability
+-   Debugging
+-   Extensibility
+
+Each module has a single responsibility and communicates through well-defined interfaces.
+
+The LLM is used only for SQL generation, not execution.
+
+This design ensures:
+
+-   Safer execution
+-   Better validation
+-   Reduced reliance on LLM correctness
+
+All LLM output is validated before execution.
+
+The validator ensures:
+
+-   Only SELECT queries are allowed
+-   Tables exist
+-   Columns exist
+-   Aggregates are supported
+
+This protects the system from incorrect or unsafe queries.
+
+SQLite was chosen because:
+
+-   Lightweight
+-   No external dependencies
+-   Supports in-memory databases
+-   Easy schema inspection
+
+This simplifies development and testing.
+
+Each module is tested independently using unit tests.
+
+This allows:
+
+-   Isolated testing
+-   Mocking dependencies
+-   Easier debugging
+
+GitHub Actions automatically runs tests on every push.
+
+------------------------------------------------------------------------
+
 # Author
 
 Anas Benhamida\
