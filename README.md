@@ -191,4 +191,4 @@ GitHub Actions automatically runs tests on every push.
 
 Anas Benhamida\
 Boston University\
-EC530 Software Engineering
+EC530 Software Design
